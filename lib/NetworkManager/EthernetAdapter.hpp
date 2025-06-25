@@ -3,6 +3,7 @@
 
 #include "esp_netif.h"
 #include <string>
+#include <cstring>
 
 class EthernetAdapter {
 public:
