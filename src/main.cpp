@@ -1,10 +1,22 @@
+#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "config.h"
+#include "NetworkManager.hpp"
+
+NetworkManager net;
 
 extern "C" void app_main() {
-    // TODO: Initialize components here
+    net.init();
+
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        net.loop();
+
+        if (net.isConnected()) {
+            printf("[Ethernet] Connected! IP: %s\n", net.getIPAddress().c_str());
+        } else {
+            printf("[Ethernet] Not connected\n");
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
