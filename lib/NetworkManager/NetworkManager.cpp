@@ -1,5 +1,5 @@
-#include "NetworkManager.hpp"
-#include "EthernetAdapter.hpp"
+#include "NetworkManager.h"
+#include "EthernetAdapter.h"
 #include "esp_log.h"
 
 static const char* TAG = "NetworkManager";

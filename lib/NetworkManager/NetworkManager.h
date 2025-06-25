@@ -1,7 +1,8 @@
-#ifndef NETWORK_MANAGER_HPP
-#define NETWORK_MANAGER_HPP
+#ifndef NETWORK_MANAGER_H
+#define NETWORK_MANAGER_H
 
 #include <string>
+#include <assert.h>
 
 class NetworkManager {
 public:
