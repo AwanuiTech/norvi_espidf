@@ -11,23 +11,6 @@
 
 static const char *TAG = "ETH_W5500";
 
-/// Connection Callback /////////////////////////////////////////////////////////////////////////
-
-static void on_eth_event(void *arg, esp_event_base_t event_base,
-                         int32_t event_id, void *event_data) {
-    EthernetAdapter *self = static_cast<EthernetAdapter *>(arg);
-
-    if (event_base == ETH_EVENT && event_id == ETHERNET_EVENT_CONNECTED) {
-        self->connected = true;
-        ESP_LOGI(TAG, "Ethernet connected");
-        if (self->connectionCallback) self->connectionCallback(true);
-    } else if (event_base == ETH_EVENT && event_id == ETHERNET_EVENT_DISCONNECTED) {
-        self->connected = false;
-        ESP_LOGW(TAG, "Ethernet disconnected");
-        if (self->connectionCallback) self->connectionCallback(false);
-    }
-}
-
 /// Constructor /////////////////////////////////////////////////////////////////////////////////
 
 EthernetAdapter::EthernetAdapter()
@@ -37,6 +20,7 @@ EthernetAdapter::EthernetAdapter()
 
 /// Initialise Ethernet /////////////////////////////////////////////////////////////////////////
 
+// @extends adapter
 void EthernetAdapter::init() {
     
     ESP_LOGI(TAG, "Initializing W5500 Ethernet...");
@@ -74,7 +58,7 @@ void EthernetAdapter::init() {
         buscfg.sclk_io_num = W5500_SCK;
         buscfg.quadwp_io_num = -1;
         buscfg.quadhd_io_num = -1;
-        buscfg.max_transfer_sz = 4096;
+        buscfg.max_transfer_sz = 2044;
     
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_DISABLED));
     ESP_LOGI(TAG, "Step 5 done");
@@ -160,22 +144,27 @@ void EthernetAdapter::init() {
     ESP_LOGI(TAG, "W5500 Ethernet started.");
 }
 
+/// Runtime Loop /////////////////////////////////////////////////////////////////////////
+
+// @extends adapter
 void EthernetAdapter::loop() {
     connected = eth_netif && esp_netif_is_netif_up(eth_netif);
     ESP_LOGD(TAG, "Ethernet loop: connected = %s", connected ? "true" : "false");
 }
 
-bool EthernetAdapter::isConnected() const {
-    ESP_LOGI(TAG, "Checking connection status: %s", connected ? "connected" : "disconnected");
-    return connected;
-}
+// @extends adapter
+bool EthernetAdapter::isConnected() const { return connected; }
+
+// @extends adapter
+esp_netif_t* EthernetAdapter::getNetif() const { return eth_netif; }
+
+/// Get Functions /////////////////////////////////////////////////////////////////////////
 
 std::string EthernetAdapter::getIPAddress() const {
     if (!connected || !eth_netif) {
         ESP_LOGW(TAG, "Not connected or netif not available when getting IP address");
         return "0.0.0.0";
     }
-
     esp_netif_ip_info_t ip;
     esp_netif_get_ip_info(eth_netif, &ip);
     char buf[16];
@@ -192,21 +181,4 @@ std::string EthernetAdapter::getMACAddress() const {
         return std::string(macStr);
     }
     return "00:00:00:00:00:00";
-}
-
-esp_netif_t* EthernetAdapter::getNetif() const {
-    return eth_netif;
-}
-
-void EthernetAdapter::onConnectionChange(std::function<void(bool)> cb) {
-    connectionCallback = cb;
-}
-
-void EthernetAdapter::reconnect() {
-    if (eth_handle) {
-        ESP_LOGI(TAG, "Restarting Ethernet interface");
-        esp_eth_stop(eth_handle);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        esp_eth_start(eth_handle);
-    }
 }
